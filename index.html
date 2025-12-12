@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>THAKHI ANALYST PRO V4 - ULTIMATE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #0f1115;
+            --bg-panel: rgba(30, 34, 40, 0.85);
+            --border: rgba(255, 255, 255, 0.12);
+            --primary: #3b82f6; /* Home */
+            --accent: #f59e0b;  /* Away */
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --blur: blur(16px);
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; }
+        
+        body { 
+            margin: 0; background: var(--bg-dark); color: var(--text-main); 
+            font-family: var(--font-main); height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+            background-image: radial-gradient(circle at top left, #1e293b 0%, #0f1115 50%);
+        }
+
+        /* --- UI KIT --- */
+        button { font-family: var(--font-main); cursor: pointer; transition: 0.2s; border: 1px solid var(--border); border-radius: 6px; }
+        button:active { transform: scale(0.96); }
+        
+        .glass { background: var(--bg-panel); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border: 1px solid var(--border); }
+        
+        .btn-icon { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: rgba(255,255,255,0.03); color: var(--text-muted); border-radius: 8px; border: 1px solid transparent; }
+        .btn-icon:hover { background: rgba(255,255,255,0.1); color: white; }
+        .btn-icon.active { background: var(--primary); color: white; border-color: rgba(255,255,255,0.2); box-shadow: 0 0 15px rgba(59,130,246,0.3); }
+        .btn-icon.active-a { background: var(--accent); } /* Pour Away */
+
+        .btn-action { padding: 10px 16px; font-weight: 600; font-size: 0.8rem; background: rgba(255,255,255,0.05); color: white; }
+        .btn-primary { background: var(--primary); border-color: var(--primary); }
+        .btn-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); border-color: var(--danger); }
+
+        input, textarea, select { background: #050505; border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; font-family: var(--font-main); width: 100%; }
+        input:focus, select:focus { border-color: var(--primary); }
+
+        /* --- LAYOUT --- */
+        header { 
+            height: 64px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; 
+            background: rgba(15,17,21,0.95); z-index: 50;
+        }
+        
+        .brand { font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+        .brand-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; box-shadow: 0 0 8px var(--success); }
+
+        .scoreboard { display: flex; align-items: center; gap: 20px; background: rgba(255,255,255,0.03); padding: 5px 20px; border-radius: 30px; border: 1px solid var(--border); }
+        .score-digit { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 700; width: 30px; text-align: center; }
+        .timer { font-family: var(--font-mono); color: var(--primary); cursor: pointer; font-weight: bold; min-width: 60px; text-align: center; }
+        
+        .workspace { flex: 1; display: flex; overflow: hidden; }
+        
+        /* TOOLS (LEFT) */
+        .toolbar { width: 70px; display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 12px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+        
+        /* ARENA (CENTER) */
+        .arena { flex: 1; display: flex; flex-direction: column; position: relative; background: #181b21; }
+        .pitch-container { flex: 1; display: flex; align-items: center; justify-content: center; padding: 15px; }
+        .pitch-wrap { 
+            width: 100%; max-width: 950px; aspect-ratio: 105/68; position: relative; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5); border-radius: 6px; overflow: hidden;
+            background: #2b3530;
+        }
+        #heatmap-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: screen; opacity: 0.85; }
+        .pitch-grass { position: absolute; inset: 0; background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 5%, transparent 5%, transparent 10%); pointer-events: none; }
+
+        /* MOMENTUM (BOTTOM) */
+        .momentum-strip { height: 60px; border-top: 1px solid var(--border); background: #111; display: flex; align-items: flex-end; padding: 0 5px; }
+        .mom-bar { flex: 1; margin: 0 1px; background: #333; opacity: 0.5; transition: height 0.3s; border-radius: 1px 1px 0 0; }
+        .mom-bar.h { background: var(--primary); opacity: 1; box-shadow: 0 0 4px var(--primary); }
+        .mom-bar.a { background: var(--accent); opacity: 1; box-shadow: 0 0 4px var(--accent); }
+
+        /* SIDEBAR (RIGHT) */
+        .sidebar { width: 320px; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: rgba(20,22,27,0.8); backdrop-filter: blur(10px); }
+        .widget { padding: 15px; border-bottom: 1px solid var(--border); }
+        .widget-title { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px; text-transform: uppercase; }
+        
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
+        .stat-val { font-family: var(--font-mono); font-weight: bold; }
+        
+        .feed { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .feed-card { 
+            padding: 10px; border-radius: 6px; background: rgba(255,255,255,0.04); font-size: 0.8rem; 
+            border-left: 3px solid #555; animation: slideIn 0.2s;
+        }
+        @keyframes slideIn { from{opacity:0; transform:translateX(10px);} to{opacity:1; transform:translateX(0);} }
+        .feed-card.home { border-color: var(--primary); }
+        .feed-card.away { border-color: var(--accent); }
+
+        /* --- MODALS --- */
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 100; display: none; align-items: center; justify-content: center; }
+        .overlay.active { display: flex; }
+        .modal { width: 600px; max-width: 95%; background: #1e2229; border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; max-height: 90vh; box-shadow: 0 25px 50px rgba(0,0,0,0.8); }
+        .modal-header { padding: 15px 20px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+        .modal-body { padding: 20px; overflow-y: auto; }
+
+        .seg-control { display: flex; background: #111; padding: 4px; border-radius: 6px; margin-bottom: 15px; }
+        .seg-btn { flex: 1; padding: 8px; text-align: center; border-radius: 4px; font-size: 0.8rem; cursor: pointer; color: #666; }
+        .seg-btn.selected { background: #333; color: white; font-weight: bold; box-shadow: 0 1px 3px black; }
+        .seg-btn.sel-h { background: var(--primary); }
+        .seg-btn.sel-a { background: var(--accent); }
+
+        /* Special Viz */
+        .goal-viz { width: 100%; height: 120px; background: repeating-linear-gradient(45deg, #222 0, #222 1px, transparent 1px, transparent 10px); border: 2px solid #555; position: relative; margin-bottom: 15px; cursor: crosshair; }
+        .goal-dot { width: 12px; height: 12px; background: var(--danger); border-radius: 50%; position: absolute; transform: translate(-50%, -50%); border: 2px solid white; display: none; }
+
+        .squad-list div { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.9rem; }
+        .squad-list div:hover { background: rgba(255,255,255,0.05); }
+        .squad-list div.selected { background: var(--primary); color: white; }
+
+        /* Report Viz */
+        .lanes-wrap { display: flex; height: 100px; gap: 5px; margin-bottom: 20px; }
+        .lane-col { flex: 1; background: rgba(255,255,255,0.03); display: flex; flex-direction: column; justify-content: flex-end; position: relative; }
+        .lane-bar { width: 100%; background: var(--primary); opacity: 0.7; transition: height 0.5s; min-height: 2px; }
+        .lane-txt { position: absolute; top: 50%; width: 100%; text-align: center; font-size: 0.8rem; font-weight: bold; transform: translateY(-50%); text-shadow: 0 1px 2px black; }
+
+    </style>
+</head>
+<body>
+
+    <div id="modal-setup" class="overlay active">
+        <div class="modal" style="width: 800px;">
+            <div class="modal-header">CONFIGURATION DU MATCH</div>
+            <div class="modal-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <label class="widget-title" style="color:var(--primary)">ÉQUIPE DOMICILE</label>
+                        <input id="setup-h-name" value="Home FC" style="margin-bottom:10px;">
+                        <label class="widget-title">TITULAIRES (Séparés par virgule)</label>
+                        <textarea id="setup-h-start" style="height:80px; margin-bottom:10px;">Lloris, Pavard, Varane, Upamecano, Hernandez, Tchouameni, Rabiot, Dembele, Griezmann, Mbappe, Giroud</textarea>
+                        <label class="widget-title">REMPLAÇANTS</label>
+                        <textarea id="setup-h-bench" style="height:60px; color:#999;">Mandanda, Areola, Konate, Kounde, Saliba, Veretout, Camavinga, Coman, Thuram</textarea>
+                    </div>
+                    <div>
+                        <label class="widget-title" style="color:var(--accent)">ÉQUIPE EXTÉRIEUR</label>
+                        <input id="setup-a-name" value="Away FC" style="margin-bottom:10px;">
+                        <label class="widget-title">TITULAIRES</label>
+                        <textarea id="setup-a-start" style="height:80px; margin-bottom:10px;">Martinez, Molina, Romero, Otamendi, Tagliafico, De Paul, Fernandez, Mac Allister, Messi, Alvarez, Di Maria</textarea>
+                        <label class="widget-title">REMPLAÇANTS</label>
+                        <textarea id="setup-a-bench" style="height:60px; color:#999;">Armani, Foyth, Montiel, Paredes, Pezzella, Acuna, Dybala, Martinez, Correa</textarea>
+                    </div>
+                </div>
+                <button onclick="initGame()" class="btn-action btn-primary" style="width:100%; margin-top:20px; padding:15px;">LANCER LE MATCH</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-action" class="overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <span>DÉTAILS ACTION</span>
+                <button class="btn-action" onclick="closeModal('modal-action')">ANNULER</button>
+            </div>
+            <div class="modal-body">
+                <div class="seg-control">
+                    <div id="act-tm-h" class="seg-btn sel-h" onclick="actTeam='home'; updateActUI()">HOME</div>
+                    <div id="act-tm-a" class="seg-btn" onclick="actTeam='away'; updateActUI()">AWAY</div>
+                </div>
+                
+                <div style="display:flex; gap:15px;">
+                    <div style="flex:1;">
+                        <label class="widget-title">JOUEUR</label>
+                        <select id="act-player" style="margin-bottom:15px;"></select>
+                        
+                        <label class="widget-title">SITUATION</label>
+                        <div class="seg-control">
+                            <div class="seg-btn selected" onclick="actSit='Open'; updateSeg(this)">JEU</div>
+                            <div class="seg-btn" onclick="actSit='Free'; updateSeg(this)">CPA</div>
+                            <div class="seg-btn" onclick="actSit='Corn'; updateSeg(this)">CORN</div>
+                        </div>
+
+                        <label class="widget-title">PARTIE DU CORPS</label>
+                        <div class="seg-control">
+                            <div class="seg-btn selected" onclick="actBody='Foot'; updateSeg(this)">PIED</div>
+                            <div class="seg-btn" onclick="actBody='Head'; updateSeg(this)">TÊTE</div>
+                        </div>
+                    </div>
+                    <div style="flex:1;">
+                        <label class="widget-title">LOCALISATION DU TIR</label>
+                        <div class="goal-viz" onclick="placeShot(event)">
+                            <div id="shot-dot" class="goal-dot"></div>
+                        </div>
+                        <div style="text-align:center; padding:10px; border:1px solid var(--border); border-radius:6px;">
+                            <div style="font-size:0.7rem; color:#aaa;">xG ESTIMÉ</div>
+                            <div id="act-xg" style="font-size:1.5rem; font-weight:bold; color:var(--primary);">0.00</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:10px;">
+                    <button class="btn-action btn-primary" style="background:var(--success); border-color:var(--success)" onclick="confirmAction('Goal')">BUT ⚽</button>
+                    <button class="btn-action" style="background:#eab308; color:black;" onclick="confirmAction('Save')">ARRÊT 🧤</button>
+                    <button class="btn-action" onclick="confirmAction('Miss')">NON CADRÉ</button>
+                    <button class="btn-action" onclick="confirmAction('Block')">CONTRÉ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-subs" class="overlay">
+        <div class="modal" style="width:700px;">
+            <div class="modal-header">
+                <span>CHANGEMENTS</span>
+                <button class="btn-action" onclick="closeModal('modal-subs')">FERMER</button>
+            </div>
+            <div class="modal-body">
+                 <div class="seg-control">
+                    <div id="sub-tm-h" class="seg-btn sel-h" onclick="renderSubs('home')">HOME</div>
+                    <div id="sub-tm-a" class="seg-btn" onclick="renderSubs('away')">AWAY</div>
+                </div>
+                <div style="display:flex; gap:20px;">
+                    <div style="flex:1">
+                        <div class="widget-title">SUR LE TERRAIN (SORTANT)</div>
+                        <div id="list-pitch" class="squad-list" style="height:200px; overflow-y:auto; border:1px solid var(--border);"></div>
+                    </div>
+                    <div style="display:flex; align-items:center;">⇄</div>
+                    <div style="flex:1">
+                        <div class="widget-title">SUR LE BANC (ENTRANT)</div>
+                        <div id="list-bench" class="squad-list" style="height:200px; overflow-y:auto; border:1px solid var(--border);"></div>
+                    </div>
+                </div>
+                <button id="btn-do-sub" class="btn-action btn-primary" style="width:100%; margin-top:15px; display:none;" onclick="confirmSub()">VALIDER LE CHANGEMENT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-cards" class="overlay">
+        <div class="modal" style="width:400px;">
+            <div class="modal-header">
+                <span>SANCTIONS</span>
+                <button class="btn-action" onclick="closeModal('modal-cards')">FERMER</button>
+            </div>
+            <div class="modal-body">
+                <div class="seg-control">
+                    <div id="card-tm-h" class="seg-btn sel-h" onclick="cardTeam='home'; updateCardUI()">HOME</div>
+                    <div id="card-tm-a" class="seg-btn" onclick="cardTeam='away'; updateCardUI()">AWAY</div>
+                </div>
+                <label class="widget-title">JOUEUR</label>
+                <select id="card-player" style="margin-bottom:20px;"></select>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn-action" style="flex:1; background:#eab308; color:black;" onclick="giveCard('Yellow')">JAUNE 🟨</button>
+                    <button class="btn-action" style="flex:1; background:var(--danger);" onclick="giveCard('Red')">ROUGE 🟥</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-reports" class="overlay">
+        <div class="modal" style="width:700px;">
+            <div class="modal-header">
+                <span>RAPPORTS TACTIQUES</span>
+                <button class="btn-action" onclick="closeModal('modal-reports')">FERMER</button>
+            </div>
+            <div class="modal-body">
+                <div class="widget-title">COULOIRS D'ATTAQUE (Zones d'origine)</div>
+                <div style="display:flex; justify-content:space-between; margin-top:10px;">
+                    <span style="color:var(--primary)">DOMICILE</span>
+                    <span style="color:var(--accent)">EXTÉRIEUR</span>
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div id="lanes-h" class="lanes-wrap"></div>
+                    <div id="lanes-a" class="lanes-wrap"></div>
+                </div>
+                
+                <div class="widget-title" style="margin-top:20px;">HAUTEUR DE RÉCUPÉRATION</div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.8rem;">
+                    <span>DEF</span><span>MID</span><span>ATT</span>
+                </div>
+                <div style="height:10px; background:#333; display:flex; margin-bottom:5px;">
+                    <div id="rec-h-0" style="background:var(--primary); width:33%; opacity:0.3"></div>
+                    <div id="rec-h-1" style="background:var(--primary); width:33%; opacity:0.3"></div>
+                    <div id="rec-h-2" style="background:var(--primary); width:33%; opacity:0.3"></div>
+                </div>
+                <div style="height:10px; background:#333; display:flex;">
+                    <div id="rec-a-2" style="background:var(--accent); width:33%; opacity:0.3"></div>
+                    <div id="rec-a-1" style="background:var(--accent); width:33%; opacity:0.3"></div>
+                    <div id="rec-a-0" style="background:var(--accent); width:33%; opacity:0.3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="brand"><div class="brand-dot"></div>THAKHI ULTIMATE</div>
+        <div class="scoreboard">
+            <span id="sb-h" class="score-digit" style="color:var(--primary)">0</span>
+            <div class="timer" onclick="toggleTimer()" id="timer-display">00:00</div>
+            <span id="sb-a" class="score-digit" style="color:var(--accent)">0</span>
+        </div>
+        <div>
+            <button class="btn-action" onclick="openReports()">📊 RAPPORTS</button>
+        </div>
+    </header>
+
+    <div class="workspace">
+        <div class="toolbar glass">
+            <div class="btn-icon" onclick="undo()" title="Annuler (Ctrl+Z)">↺</div>
+            <div class="btn-icon active" id="tool-act" onclick="setTool('act')" title="Jeu / Passes">📍</div>
+            <div class="btn-icon" id="tool-shot" onclick="setTool('shot')" title="Tir / Action">⚽</div>
+            <div class="btn-icon" id="tool-rec" onclick="setTool('rec')" title="Récupération">⚡</div>
+            <div style="height:1px; width:40px; background:var(--border); margin:10px 0;"></div>
+            <div class="btn-icon" onclick="openCards()" title="Cartons">🟨</div>
+            <div class="btn-icon" onclick="openSubs()" title="Changements">⇄</div>
+            <div class="btn-icon" onclick="toggleHeatmap()" title="Heatmap" style="margin-top:auto">🔥</div>
+        </div>
+
+        <div class="arena">
+            <div class="pitch-container">
+                <div class="pitch-wrap">
+                    <div class="pitch-grass"></div>
+                    <canvas id="heatmap-canvas" width="950" height="615"></canvas>
+                    <svg id="pitch-svg" viewBox="0 0 105 68" style="position:relative; z-index:10; width:100%; height:100%; cursor:crosshair;" onclick="pitchClick(event)">
+                        <g stroke="rgba(255,255,255,0.25)" stroke-width="0.35" fill="none">
+                            <rect width="105" height="68"/>
+                            <line x1="52.5" y1="0" x2="52.5" y2="68"/>
+                            <circle cx="52.5" cy="34" r="9.15"/>
+                            <rect x="0" y="13.84" width="16.5" height="40.32"/>
+                            <rect x="88.5" y="13.84" width="16.5" height="40.32"/>
+                            <rect x="0" y="24.84" width="5.5" height="18.32"/>
+                            <rect x="99.5" y="24.84" width="5.5" height="18.32"/>
+                            <circle cx="11" cy="34" r="0.2" fill="white"/>
+                            <circle cx="94" cy="34" r="0.2" fill="white"/>
+                        </g>
+                        <g id="dynamic-layer"></g>
+                    </svg>
+                </div>
+            </div>
+            <div class="momentum-strip" id="mom-strip">
+                </div>
+        </div>
+
+        <div class="sidebar glass">
+            <div class="widget">
+                <div class="widget-title">POSSESSION</div>
+                <div class="seg-control" style="margin-bottom:5px;">
+                    <div id="poss-btn-h" class="seg-btn" onclick="setPoss('home')">HOME</div>
+                    <div id="poss-btn-a" class="seg-btn" onclick="setPoss('away')">AWAY</div>
+                </div>
+                <div style="height:6px; background:#222; border-radius:3px; overflow:hidden; display:flex;">
+                    <div id="bar-poss-h" style="width:50%; background:var(--primary); transition:0.5s"></div>
+                    <div id="bar-poss-a" style="width:50%; background:var(--accent); transition:0.5s"></div>
+                </div>
+                <div class="stat-row" style="margin-top:5px;">
+                    <span id="txt-poss-h" style="color:var(--primary)">50%</span>
+                    <span id="txt-poss-a" style="color:var(--accent)">50%</span>
+                </div>
+            </div>
+
+            <div class="widget">
+                <div class="widget-title">STATISTIQUES CLÉS</div>
+                <div class="stat-row">
+                    <span style="color:#888">Tirs (Cadrés)</span>
+                    <span class="stat-val"><span style="color:var(--primary)" id="val-sh-h">0(0)</span> - <span style="color:var(--accent)" id="val-sh-a">0(0)</span></span>
+                </div>
+                <div class="stat-row">
+                    <span style="color:#888">xG (Expected Goals)</span>
+                    <span class="stat-val"><span style="color:var(--primary)" id="val-xg-h">0.00</span> - <span style="color:var(--accent)" id="val-xg-a">0.00</span></span>
+                </div>
+                <div class="stat-row">
+                    <span style="color:#888">Passes</span>
+                    <span class="stat-val"><span style="color:var(--primary)" id="val-pass-h">0</span> - <span style="color:var(--accent)" id="val-pass-a">0</span></span>
+                </div>
+                <div class="stat-row">
+                    <span style="color:#888">Récupérations</span>
+                    <span class="stat-val"><span style="color:var(--primary)" id="val-rec-h">0</span> - <span style="color:var(--accent)" id="val-rec-a">0</span></span>
+                </div>
+                <div class="stat-row">
+                    <span style="color:#888">Cartons (J/R)</span>
+                    <span class="stat-val"><span style="color:var(--primary)" id="val-card-h">0/0</span> - <span style="color:var(--accent)" id="val-card-a">0/0</span></span>
+                </div>
+            </div>
+
+            <div class="feed" id="feed">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGIC ENGINE V4 ---
+        const game = {
+            home: { name:'', color:'#3b82f6', squad:[], stats: { goals:0, pass:0, shots:0, sog:0, xg:0, rec:[0,0,0], lanes:[0,0,0], yel:0, red:0 } },
+            away: { name:'', color:'#f59e0b', squad:[], stats: { goals:0, pass:0, shots:0, sog:0, xg:0, rec:[0,0,0], lanes:[0,0,0], yel:0, red:0 } },
+            events: [],
+            timer: 0,
+            running: false,
+            poss: null, possTime: { home:0, away:0 },
+            mom: 0, // Momentum -10 to 10
+            hmPoints: []
+        };
+
+        // UI STATE
+        let tool = 'act'; 
+        let actTeam = 'home';
+        let actSit = 'Open';
+        let actBody = 'Foot';
+        let tempEvent = null; // Stocke clic position
+        let subTeam = 'home';
+        let subOut = null;
+        let subIn = null;
+        let cardTeam = 'home';
+
+        // CANVAS
+        const ctx = document.getElementById('heatmap-canvas').getContext('2d');
+        let showHM = false;
+
+        // --- INIT ---
+        function initGame() {
+            game.home.name = document.getElementById('setup-h-name').value;
+            game.away.name = document.getElementById('setup-a-name').value;
+            
+            parseSquad('home');
+            parseSquad('away');
+
+            document.getElementById('poss-btn-h').innerText = game.home.name.substring(0,6);
+            document.getElementById('poss-btn-a').innerText = game.away.name.substring(0,6);
+            
+            closeModal('modal-setup');
+            
+            // Init Momentum UI
+            const strip = document.getElementById('mom-strip');
+            for(let i=0; i<60; i++){
+                let d = document.createElement('div'); d.className='mom-bar'; d.id='mb-'+i; strip.appendChild(d);
+            }
+        }
+
+        function parseSquad(side) {
+            let start = document.getElementById(`setup-${side.charAt(0)}-start`).value.split(',');
+            let bench = document.getElementById(`setup-${side.charAt(0)}-bench`).value.split(',');
+            
+            game[side].squad = [];
+            start.forEach(n => { if(n.trim()) game[side].squad.push({name:n.trim(), status:'pitch'}); });
+            bench.forEach(n => { if(n.trim()) game[side].squad.push({name:n.trim(), status:'bench'}); });
+        }
+
+        // --- TIMER & LOOP ---
+        function toggleTimer() { game.running = !game.running; document.getElementById('timer-display').style.opacity = game.running?1:0.5; }
+        
+        setInterval(() => {
+            if(!game.running) return;
+            game.timer++;
+            
+            if(game.poss) {
+                game.possTime[game.poss]++;
+                game.mom += (game.poss==='home' ? 0.03 : -0.03);
+            }
+            game.mom *= 0.98; // Decay
+            
+            // Updates visual
+            let m = Math.floor(game.timer/60).toString().padStart(2,'0');
+            let s = (game.timer%60).toString().padStart(2,'0');
+            document.getElementById('timer-display').innerText = m+":"+s;
+
+            // Momentum
+            let min = Math.floor(game.timer/60);
+            if(min < 60) {
+                let bar = document.getElementById('mb-'+min);
+                if(bar) {
+                    bar.style.height = (Math.abs(game.mom)*8)+'px';
+                    bar.className = 'mom-bar ' + (game.mom>0?'h':'a');
+                }
+            }
+
+            // Poss UI
+            let tot = game.possTime.home + game.possTime.away;
+            if(tot>0) {
+                let hp = Math.round((game.possTime.home/tot)*100);
+                document.getElementById('bar-poss-h').style.width = hp+'%';
+                document.getElementById('bar-poss-a').style.width = (100-hp)+'%';
+                document.getElementById('txt-poss-h').innerText = hp+'%';
+                document.getElementById('txt-poss-a').innerText = (100-hp)+'%';
+            }
+
+        }, 1000);
+
+        function setPoss(side) {
+            game.poss = side;
+            document.getElementById('poss-btn-h').classList.toggle('sel-h', side==='home');
+            document.getElementById('poss-btn-a').classList.toggle('sel-a', side==='away');
+        }
+
+        // --- INTERACTION ---
+        function setTool(t) {
+            tool = t;
+            document.querySelectorAll('.toolbar .btn-icon').forEach(b => b.classList.remove('active'));
+            document.getElementById('tool-'+t).classList.add('active');
+        }
+
+        function pitchClick(e) {
+            if(!game.running) return;
+            let r = e.currentTarget.getBoundingClientRect();
+            let x = ((e.clientX - r.left) / r.width) * 105;
+            let y = ((e.clientY - r.top) / r.height) * 68;
+            
+            // Determine active team based on possession or tool
+            let active = game.poss || 'home';
+
+            // VISUAL DOT
+            let svg = document.getElementById('dynamic-layer');
+            let c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+            c.setAttribute("cx",x); c.setAttribute("cy",y); c.setAttribute("r",0.6);
+            c.setAttribute("fill","white");
+            svg.appendChild(c); setTimeout(()=>c.remove(),1500);
+
+            // LOGIC BY TOOL
+            if(tool === 'act') {
+                game[active].stats.pass++;
+                // Heatmap
+                game.hmPoints.push({x:x*9, y:y*9, team:active}); // *9 car canvas ~950px
+                if(showHM) drawHM();
+                // Lanes
+                let lane = y<22.6 ? 0 : (y>45.3 ? 2 : 1);
+                game[active].stats.lanes[lane]++;
+                game.mom += (active==='home' ? 0.1 : -0.1);
+            } 
+            else if(tool === 'rec') {
+                let recTeam = active==='home'?'away':'home';
+                setPoss(recTeam);
+                log(recTeam, "Récupération", "⚡");
+                game.mom += (recTeam==='home'?1:-1);
+                // Zones
+                let z = 1; 
+                // Simplified zones logic: 0=Def, 1=Mid, 2=Att
+                if(recTeam==='home') { z = x<35?0 : (x>70?2:1); } 
+                else { z = x>70?0 : (x<35?2:1); }
+                game[recTeam].stats.rec[z]++;
+            }
+            else if(tool === 'shot') {
+                tempEvent = {x:x, y:y, dist:0};
+                // Auto calc distance to Goal
+                let goalX = active==='home'?105:0;
+                tempEvent.dist = Math.hypot(goalX-x, 34-y);
+                openActionModal(active);
+            }
+            updateSidebar();
+        }
+
+        // --- ACTION MODAL ---
+        function openActionModal(team) {
+            actTeam = team;
+            updateActUI(); // Set colors
+            
+            // Populate players
+            let sel = document.getElementById('act-player');
+            sel.innerHTML = '';
+            game[team].squad.filter(p=>p.status==='pitch').forEach(p => {
+                let o = document.createElement('option'); o.text=p.name; sel.add(o);
+            });
+            
+            // Base xG
+            calcXG();
+            document.getElementById('modal-action').classList.add('active');
+        }
+
+        function updateActUI() {
+            document.getElementById('act-tm-h').className = 'seg-btn ' + (actTeam==='home'?'sel-h':'');
+            document.getElementById('act-tm-a').className = 'seg-btn ' + (actTeam==='away'?'sel-a':'');
+            calcXG();
+        }
+
+        function updateSeg(el) {
+            el.parentNode.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('selected'));
+            el.classList.add('selected');
+            calcXG();
+        }
+
+        function placeShot(e) {
+            let r = e.currentTarget.getBoundingClientRect();
+            let dot = document.getElementById('shot-dot');
+            dot.style.left = (e.clientX - r.left)+'px';
+            dot.style.top = (e.clientY - r.top)+'px';
+            dot.style.display = 'block';
+            // Bonus xG for placement
+            calcXG(true);
+        }
+
+        function calcXG(placed=false) {
+            let base = 0.7 * Math.exp(-0.1 * tempEvent.dist);
+            if(actSit==='Corn') base *= 0.4;
+            if(actBody==='Head') base *= 0.5;
+            if(placed) base *= 1.2;
+            document.getElementById('act-xg').innerText = base.toFixed(2);
+            tempEvent.xg = base;
+        }
+
+        function confirmAction(outcome) {
+            let pName = document.getElementById('act-player').value;
+            let tm = game[actTeam];
+            
+            tm.stats.shots++;
+            tm.stats.xg += tempEvent.xg;
+            
+            if(outcome === 'Goal') {
+                tm.stats.goals++;
+                tm.stats.sog++;
+                document.getElementById('sb-'+(actTeam==='home'?'h':'a')).innerText = tm.stats.goals;
+                log(actTeam, "BUT !!! ("+pName+")", "⚽");
+                game.mom += (actTeam==='home'?5:-5);
+            } else if (outcome === 'Save') {
+                tm.stats.sog++;
+                log(actTeam, "Tir Cadré ("+pName+")", "🧤");
+                game.mom += (actTeam==='home'?1:-1);
+            } else {
+                log(actTeam, "Tir ("+pName+")", "❌");
+            }
+
+            // Visual Dot on pitch
+            game.hmPoints.push({x:tempEvent.x*9, y:tempEvent.y*9, team:actTeam});
+            if(showHM) drawHM();
+            
+            updateSidebar();
+            closeModal('modal-action');
+        }
+
+        // --- SUBS ---
+        function openSubs() { renderSubs('home'); document.getElementById('modal-subs').classList.add('active'); }
+        
+        function renderSubs(side) {
+            subTeam = side;
+            document.getElementById('sub-tm-h').className = 'seg-btn '+(side==='home'?'sel-h':'');
+            document.getElementById('sub-tm-a').className = 'seg-btn '+(side==='away'?'sel-a':'');
+            
+            let lp = document.getElementById('list-pitch'); lp.innerHTML='';
+            let lb = document.getElementById('list-bench'); lb.innerHTML='';
+            
+            game[side].squad.forEach((p, idx) => {
+                let d = document.createElement('div'); d.innerText = p.name;
+                d.onclick = () => {
+                    document.querySelectorAll('.squad-list div').forEach(x=>x.classList.remove('selected'));
+                    d.classList.add('selected');
+                    if(p.status==='pitch') subOut = idx; else subIn = idx;
+                    checkSubReady();
+                };
+                if(p.status==='pitch') lp.appendChild(d);
+                if(p.status==='bench') lb.appendChild(d);
+            });
+            document.getElementById('btn-do-sub').style.display='none';
+            subOut=null; subIn=null;
+        }
+
+        function checkSubReady() {
+            if(subOut!=null && subIn!=null) document.getElementById('btn-do-sub').style.display='block';
+        }
+
+        function confirmSub() {
+            let tm = game[subTeam];
+            let pOut = tm.squad[subOut];
+            let pIn = tm.squad[subIn];
+            
+            pOut.status = 'subbed';
+            pIn.status = 'pitch';
+            
+            log(subTeam, "Chgt: "+pIn.name+" ⇄ "+pOut.name, "⇄");
+            renderSubs(subTeam);
+        }
+
+        // --- CARDS ---
+        function openCards() { cardTeam='home'; updateCardUI(); document.getElementById('modal-cards').classList.add('active'); }
+        function updateCardUI() {
+            document.getElementById('card-tm-h').className='seg-btn '+(cardTeam==='home'?'sel-h':'');
+            document.getElementById('card-tm-a').className='seg-btn '+(cardTeam==='away'?'sel-a':'');
+            let sel = document.getElementById('card-player'); sel.innerHTML='';
+            game[cardTeam].squad.forEach(p => {
+                let o = document.createElement('option'); o.text=p.name + (p.status==='bench'?' (Banc)':''); sel.add(o);
+            });
+        }
+        function giveCard(col) {
+            let p = document.getElementById('card-player').value;
+            if(col==='Yellow') game[cardTeam].stats.yel++; else game[cardTeam].stats.red++;
+            log(cardTeam, "Carton "+(col==='Yellow'?'Jaune':'Rouge')+" ("+p+")", col==='Yellow'?'🟨':'🟥');
+            updateSidebar();
+            closeModal('modal-cards');
+        }
+
+        // --- REPORTS & HEATMAP ---
+        function toggleHeatmap() {
+            showHM = !showHM;
+            document.getElementById('heatmap-canvas').style.display = showHM ? 'block' : 'none';
+            if(showHM) drawHM();
+        }
+        function drawHM() {
+            ctx.clearRect(0,0,950,615);
+            game.hmPoints.forEach(p => {
+                let g = ctx.createRadialGradient(p.x, p.y, 5, p.x, p.y, 40);
+                let c = p.team==='home' ? '59,130,246' : '245,158,11';
+                g.addColorStop(0, `rgba(${c},0.4)`); g.addColorStop(1, `rgba(${c},0)`);
+                ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x, p.y, 40, 0, Math.PI*2); ctx.fill();
+            });
+        }
+
+        function openReports() {
+            ['home','away'].forEach(t => {
+                let div = document.getElementById('lanes-'+t.charAt(0)); div.innerHTML='';
+                let tot = game[t].stats.lanes.reduce((a,b)=>a+b,0) || 1;
+                game[t].stats.lanes.forEach((v, i) => {
+                    let col = document.createElement('div'); col.className='lane-col';
+                    let bar = document.createElement('div'); bar.className='lane-bar'; 
+                    bar.style.height = ((v/tot)*100)+'%';
+                    bar.style.background = (t==='home'?'var(--primary)':'var(--accent)');
+                    let txt = document.createElement('div'); txt.className='lane-txt'; txt.innerText = Math.round((v/tot)*100)+'%';
+                    col.appendChild(bar); col.appendChild(txt); div.appendChild(col);
+                });
+                
+                // Rec Height Colorization
+                let r = game[t].stats.rec; let max = Math.max(...r, 1);
+                for(let i=0; i<3; i++) {
+                    let el = document.getElementById(`rec-${t.charAt(0)}-${i}`);
+                    el.style.opacity = 0.2 + ((r[i]/max)*0.8);
+                }
+            });
+            document.getElementById('modal-reports').classList.add('active');
+        }
+
+        // --- UTILS ---
+        function updateSidebar() {
+            document.getElementById('val-sh-h').innerText = `${game.home.stats.shots}(${game.home.stats.sog})`;
+            document.getElementById('val-sh-a').innerText = `${game.away.stats.shots}(${game.away.stats.sog})`;
+            document.getElementById('val-xg-h').innerText = game.home.stats.xg.toFixed(2);
+            document.getElementById('val-xg-a').innerText = game.away.stats.xg.toFixed(2);
+            document.getElementById('val-pass-h').innerText = game.home.stats.pass;
+            document.getElementById('val-pass-a').innerText = game.away.stats.pass;
+            let rh = game.home.stats.rec; let ra = game.away.stats.rec;
+            document.getElementById('val-rec-h').innerText = rh[0]+rh[1]+rh[2];
+            document.getElementById('val-rec-a').innerText = ra[0]+ra[1]+ra[2];
+            document.getElementById('val-card-h').innerText = `${game.home.stats.yel}/${game.home.stats.red}`;
+            document.getElementById('val-card-a').innerText = `${game.away.stats.yel}/${game.away.stats.red}`;
+        }
+
+        function log(team, msg, icon) {
+            let fd = document.getElementById('feed');
+            let m = Math.floor(game.timer/60);
+            let d = document.createElement('div');
+            d.className = 'feed-card ' + team;
+            d.innerHTML = `<b>${m}'</b> ${msg} <span style="float:right">${icon}</span>`;
+            fd.prepend(d);
+            // Save event for Undo
+            game.events.push({team:team, type:'log', el:d});
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        function undo() { 
+            // Simple undo visual for demo
+            if(game.events.length>0) {
+                let last = game.events.pop();
+                if(last.el) last.el.remove();
+                alert("Dernière action annulée (Stats à recalculer dans version prod)");
+            }
+        }
+    </script>
+</body>
+</html>
